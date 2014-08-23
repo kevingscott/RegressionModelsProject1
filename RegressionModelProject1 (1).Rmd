@@ -1,0 +1,72 @@
+---
+title: "Regression Models Course Project"
+output: pdf_document
+---
+
+Regression Models Course Project
+========================================================
+
+#Executive Summary /Introduction
+This analysis looked at the question of whether vehicles with a manual or automatic transmissions have better overall Miles Per Gallon (MPG) ratings.  The analysis did some basic exploratory analysis and then created three models and compared those models.  Unfortunately, at the end of the analysis we are unable to conclusively state that either type of transmission is better for MPG.  It is believed that this is caused by variables that are highly correlated with transmissions that have more effect.
+
+# Exploratory Analysis
+This section will detail some initial explorations of the data and drive the direction of later analysis.  First we will examine the data by checking the correlation and pair-wise graphs of each variable in the dataset.  The full correlation table and pairwise comparisons are available in the appendix in Figure 3.  From this comparisons we can see a number of important things about the data including 1) Transmission Type (the AM variable) is not highly correlated with MPG.  2) There are a number of variables that are highly negatively correlated with MPG and highly correlated with one another (cyl, disp, hp and wt)
+
+First we simply fit the data using the simplest model comparing MPG to transmissions type.  This will give us a baseline for later model comparisons
+```{r echo=FALSE}
+model1 <- lm(mpg ~ as.factor(am),data=mtcars)
+summary(model1)$r.squared
+summary(model1)$coefficients
+```
+According to this model, the manual transmissions tend to have a higher MPG.  This also appears to be the case when plotting the data and the model fit (see Appendix Figure 1 for the plot).  However, the model does not appears to do a good job at explaining the differences in MPG, since the R Squared value is only .34.
+
+Perhaps one of the problems with this model is that there are other variables that are more important in explaining MPG.  Checking the correlation of the two initial variables against the rest of the data in the dataset we can see there a number of other factors that are more important in explaining MPG, especially correlated with MPG is the number of cycles (cyl), displacement (disp), horse power (hp), and weight (wt).  Perhaps we can add this data to the model and get a better fit.  To create this mode we do the following in r:
+```{r echo=FALSE}
+model2 <- update(model1,mpg ~ as.factor(am)+cyl+disp+hp+wt)
+summary(model2)$r.squared
+summary(model2)$coefficients
+```
+This model overall is a much stronger predictor of MPG (it has an R-squared value of .83).  Viewing the residuals graphically, we can see that this model also has much lower residuals, as would be expected.  The residual plot comparing all models created in this analysis is available in the Appendix Figure 2.  The problem with this model is that it the P-value for the Transmission variable is quite high, so we cannot accept the model's conclusion that within a given group of vehicles with the same cylinders, displacement, horsepower and weight that the MPG would be 1.56 higher for a manual transmission. 
+
+In an effort to reduce the complexity of the model to get to the central question of whether the transmission has an impact on MPG when correcting for other variables, we can look at the correlation between the variables.  It seems logical that the number of cylinders, displacement, horsepower and weight would also be somewhat correlated. 
+
+It appears that the number of cylinders is the most correlated with the other variables from our second model, therefore we will attempt to only include cylinders.  Cylinder also have the advantage of being a factor variable so we should have many examples with a given number of cylinders to compare the MPGs.  Fitting this model as the below:
+```{r echo=FALSE}
+model3 <- update(model1,mpg ~ as.factor(am)+cyl)
+summary(model3)$r.squared
+summary(model3)$coefficients
+```
+This model has less predictive power (the R-squared value is .76).   More interesting for trying to determine the effect of transmission on MPG, we see that the P-value of the transmission Coefficient is much lower, but is still just greater than 5 percent. Looking at the residuals for this model compared to our currently best residual values, it's difficult to pick out which model has better residuals.  This plot is available in Figure 2 in the Appendix.
+
+Finally, comparing the ANOVA results for three models seems to lend credibility to the idea of removing all the additional from the second model except for Cyl.  The full output of the ANOVA is listed in the Appendix but the third model with just cyl has a much higher p-value than the first model.  The second model offers only a small advantage over the third model.  Since the third model is only slightly worse in predictive power (as measured by both R-squared and residuals) and the p-value for the Transmission factor is much lower, we can conclude that the third model is the best of the three, but is still not sufficient to answer the central question of the analysis.
+
+# Conclusions
+Based on the ANOVA and Residual analysis of these models, the third model is definitely the most effective at answering our central question.  Unfortunately, the p-value is not significant for either of the two models with good predictive power, therefore even tho the general trend is that the manual transmissions, it is not possible to conclusively state that this is due to the transmissions themselves or to other variables which are more significant to the outcome that are highly correlated with the transmissions.
+
+# Appendix
+
+## Figure 1: MPG vs Transmisison with Fit
+```{r echo=FALSE}
+plot(mtcars$mpg ~ mtcars$am,xlab="Transmission Type (1=Manual, 0=Automatic)",ylab="Miles Per Gallon (MPG)")
+abline(model1)
+```
+
+## Figure 2: Model 1 Residuals Versus Model 2 Residuals
+```{r echo=FALSE}
+plot(predict(model1),resid(model1),col="red")
+points(predict(model2),resid(model2),col="blue")
+points(predict(model3),resid(model3),col="green")
+legend("bottom",c("Model 1","Model 2","Model 3"),col=c("red","blue","green"),lty=c(1,1))
+```
+
+## Listing 1 : Anova Comparisons of Models 1, 2 and 3 (Note that the Comparison is First model versus Third versus Second)
+```{r echo=FALSE}
+anova(model1,model3,model2)
+```
+
+## Figure 3: Pairwise Graphs and Correlations Between Variables in Dataset
+```{r echo=FALSE}
+options(width=600)
+cor(mtcars)
+pairs(mtcars)
+```
